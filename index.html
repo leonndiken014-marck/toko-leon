@@ -1,34 +1,220 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Toko Leon</title>
+    <title>CYBER_OS_V10 | CORE_TERMINAL</title>
     <style>
-        body { background: #0f172a; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .card { background: #1e293b; padding: 30px; border-radius: 20px; width: 85%; max-width: 300px; text-align: center; border: 1px solid #38bdf8; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: #38bdf8; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: #0f172a; }
+        :root { --neon: #00ff41; --bg: #030303; --window: #0a0a0a; --red: #ff3e3e; --blue: #38bdf8; }
+        body { background: var(--bg); color: var(--neon); font-family: 'Courier New', monospace; margin: 0; overflow: hidden; font-size: 13px; }
+        canvas { position: fixed; top: 0; left: 0; z-index: -1; opacity: 0.1; }
+        .hidden { display: none !important; }
+
+        /* AUTH SCREEN */
+        #auth-screen { display: flex; justify-content: center; align-items: center; height: 100vh; background: radial-gradient(circle, #0a110a 0%, #000 100%); }
+        .auth-card { background: var(--window); padding: 30px; border: 1px solid var(--neon); width: 320px; box-shadow: 0 0 30px rgba(0,255,0,0.1); text-align: center; }
+        input { background: transparent; border: 1px solid var(--neon); color: var(--neon); width: 100%; padding: 12px; margin: 10px 0; outline: none; box-sizing: border-box; font-family: monospace; }
+        button { background: var(--neon); color: black; border: none; padding: 12px; width: 100%; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        button:hover { background: white; box-shadow: 0 0 15px white; }
+
+        /* MAIN DASHBOARD */
+        #main-os { display: grid; grid-template-columns: 2.5fr 1fr; height: 100vh; gap: 10px; padding: 10px; box-sizing: border-box; }
+        .panel { background: rgba(5,5,5,0.95); border: 1px solid var(--neon); position: relative; display: flex; flex-direction: column; overflow: hidden; }
+        .header { background: var(--neon); color: black; padding: 5px 10px; font-weight: bold; font-size: 11px; display: flex; justify-content: space-between; }
+
+        /* FILE SYSTEM */
+        .explorer { padding: 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 20px; overflow-y: auto; }
+        .file { text-align: center; cursor: pointer; transition: 0.2s; padding: 10px; border-radius: 5px; }
+        .file:hover { background: rgba(0,255,65,0.1); border: 1px solid var(--neon); }
+        .file-icon { font-size: 40px; margin-bottom: 5px; }
+        .locked-tag { color: var(--red); font-size: 9px; font-weight: bold; display: block; margin-top: 5px; }
+
+        /* LEON-AI PANEL */
+        #ai-panel { border-color: var(--blue); }
+        #ai-panel .header { background: var(--blue); }
+        #ai-chat { flex: 1; padding: 15px; overflow-y: auto; color: var(--blue); scroll-behavior: smooth; }
+        .ai-msg { margin-bottom: 15px; border-left: 2px solid var(--blue); padding-left: 10px; line-height: 1.5; }
+        .ai-status { font-size: 10px; color: var(--blue); padding: 5px 15px; opacity: 0.6; }
+
+        /* DECRYPTION OVERLAY */
+        #overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.95); z-index: 1000; display: none; justify-content: center; align-items: center; flex-direction: column; }
+        .loader { width: 300px; height: 4px; border: 1px solid var(--neon); margin: 20px 0; overflow: hidden; }
+        .fill { height: 100%; background: var(--neon); width: 0%; transition: 0.1s; }
+        .blink { animation: blinker 0.8s linear infinite; }
+        @keyframes blinker { 50% { opacity: 0; } }
     </style>
 </head>
-<body>
-    <div class="card">
-        <h2>🛡️ LOGIN ADMIN</h2>
-        <input type="text" id="user" placeholder="Username">
-        <input type="password" id="pass" placeholder="Password">
-        <button onclick="masuk()">MASUK KE TOKO</button>
-        <div id="msg" style="margin-top:15px; font-size:13px">Silahkan Login</div>
+<body oncontextmenu="return false">
+
+<canvas id="matrix"></canvas>
+
+<!-- 1. AUTH SCREEN -->
+<div id="auth-screen">
+    <div class="auth-card" id="reg-box">
+        <h3 style="letter-spacing: 5px;">[ REGISTER ]</h3>
+        <p style="font-size: 10px; opacity: 0.6;">CREATE_NEW_ACCESS_ID</p>
+        <input type="text" id="rUser" placeholder="New Username">
+        <input type="password" id="rPass" placeholder="New Password">
+        <button onclick="saveUser()">INITIALIZE IDENTITY</button>
+        <p style="font-size: 10px; margin-top: 20px; cursor: pointer;" onclick="toggleAuth()">ALREADY REGISTERED? LOGIN</p>
     </div>
-    <script>
-        function masuk() {
-            let u = document.getElementById("user").value.toUpperCase();
-            let p = document.getElementById("pass").value;
-            if (u === "LEON" && p === "123") {
-                window.location.href = "toko.html"; 
-            } else {
-                document.getElementById("msg").innerHTML = "❌ Data Salah!";
-                document.getElementById("msg").style.color = "#f43f5e";
-            }
+
+    <div class="auth-card hidden" id="log-box">
+        <h3 style="letter-spacing: 5px; color: var(--blue);">[ LOGIN ]</h3>
+        <input type="text" id="lUser" placeholder="Username">
+        <input type="password" id="lPass" placeholder="Password">
+        <button style="background: var(--blue);" onclick="doLogin()">VERIFY_ACCESS</button>
+    </div>
+</div>
+
+<!-- 2. MAIN OS DASHBOARD -->
+<div id="main-os" class="hidden">
+    <div class="panel">
+        <div class="header">
+            <span>FILE_EXPLORER_V10.4</span>
+            <span id="user-tag">ROOT@SYSTEM</span>
+        </div>
+        <div class="explorer">
+            <div class="file" onclick="crack('GOV_DATABASE.enc')">
+                <div class="file-icon">📁</div>
+                <span>Gov_DB.enc</span>
+                <span class="locked-tag">[ENCRYPTED]</span>
+            </div>
+            <div class="file" onclick="crack('BANK_ACCESS.vault')">
+                <div class="file-icon">🔐</div>
+                <span>Bank_Vault</span>
+                <span class="locked-tag">[LOCKED]</span>
+            </div>
+            <div class="file" onclick="crack('SATELLITE_LINK.sh')">
+                <div class="file-icon">🛰️</div>
+                <span>Sat_Link.sh</span>
+                <span class="locked-tag">[PROTECTED]</span>
+            </div>
+            <div class="file" onclick="alert('File Kosong: Belum ada data curian!')">
+                <div class="file-icon">📄</div>
+                <span>Note.txt</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. AI ASSISTANT -->
+    <div class="panel" id="ai-panel">
+        <div class="header">
+            <span>LEON_AI_NEURAL_LINK</span>
+            <span class="blink">● ACTIVE</span>
+        </div>
+        <div id="ai-chat">
+            <div class="ai-msg"><b>[SYSTEM]</b>: Booting Neural Assistant... <br>Memindai struktur hardware... <br>Koneksi stabil.</div>
+        </div>
+        <div class="ai-status" id="ai-status"></div>
+    </div>
+</div>
+
+<!-- DECRYPTION OVERLAY -->
+<div id="overlay">
+    <h2 id="ov-title" class="blink">CRACKING_ENCRYPTION</h2>
+    <div id="ov-log" style="font-size: 10px; margin: 10px 0;">Analisis paket data...</div>
+    <div class="loader"><div class="fill" id="fill"></div></div>
+    <div id="ov-pct">0%</div>
+</div>
+
+<script>
+    // --- AUTH LOGIC ---
+    function toggleAuth() {
+        document.getElementById('reg-box').classList.toggle('hidden');
+        document.getElementById('log-box').classList.toggle('hidden');
+    }
+
+    function saveUser() {
+        const u = document.getElementById('rUser').value;
+        const p = document.getElementById('rPass').value;
+        if(!u || !p) return;
+        localStorage.setItem('cyberUser', u);
+        localStorage.setItem('cyberPass', p);
+        alert("Identitas Terdaftar. Memulai Protokol Verifikasi...");
+        toggleAuth();
+    }
+
+    function doLogin() {
+        const u = document.getElementById('lUser').value;
+        const p = document.getElementById('lPass').value;
+        if(u === localStorage.getItem('cyberUser') && p === localStorage.getItem('cyberPass')) {
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('main-os').classList.remove('hidden');
+            document.getElementById('user-tag').innerText = `ROOT@${u.toUpperCase()}`;
+            aiTalk(`Akses Diterima. Selamat datang, Agen ${u}. Saya telah menyiapkan jalur enkripsi ganda untuk aktivitas Anda malam ini. Apa target pertama kita?`);
+        } else {
+            alert("AKSES DITOLAK: Sidik jari digital tidak cocok!");
         }
-    </script>
+    }
+
+    // --- AI LOGIC (Cerdas & Teliti) ---
+    function aiTalk(text) {
+        const chat = document.getElementById('ai-chat');
+        const status = document.getElementById('ai-status');
+        status.innerText = "LEON-AI sedang menganalisis data...";
+        
+        setTimeout(() => {
+            status.innerText = "";
+            const div = document.createElement('div');
+            div.className = 'ai-msg';
+            div.innerHTML = `<b>[LEON-AI]</b>: ${text}`;
+            chat.appendChild(div);
+            chat.scrollTop = chat.scrollHeight;
+        }, 1500);
+    }
+
+    // --- DECRYPTION SIMULATOR ---
+    function crack(file) {
+        aiTalk(`Mendeteksi file ${file}. Tingkat keamanan: MILITER. Memulai Brute-Force tingkat lanjut...`);
+        
+        setTimeout(() => {
+            const overlay = document.getElementById('overlay');
+            const fill = document.getElementById('fill');
+            const pct = document.getElementById('ov-pct');
+            const log = document.getElementById('ov-log');
+            
+            overlay.style.display = 'flex';
+            document.getElementById('ov-title').innerText = "OVERRIDING: " + file;
+            
+            let p = 0;
+            const timer = setInterval(() => {
+                p += Math.floor(Math.random() * 3) + 1;
+                if(p > 100) p = 100;
+                fill.style.width = p + "%";
+                pct.innerText = p + "%";
+                log.innerText = `Memecah kode Hex: 0x${Math.random().toString(16).substring(2, 8).toUpperCase()}...`;
+                
+                if(p === 100) {
+                    clearInterval(timer);
+                    setTimeout(() => {
+                        overlay.style.display = 'none';
+                        alert("FAILED: Enkripsi terdeteksi menggunakan Quantum-Shield. Dibutuhkan akses fisik!");
+                        aiTalk(`Maaf Agen, file ${file} gagal dibuka. Keamanannya sangat teliti. Saya mendeteksi adanya jebakan pelacak IP. Sebaiknya kita berhenti sejenak.`);
+                    }, 1000);
+                }
+            }, 150);
+        }, 2000);
+    }
+
+    // Matrix Background
+    const canvas = document.getElementById('matrix');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    const letters = "01010101010101010101";
+    const drops = [];
+    for(let x = 0; x < canvas.width/16; x++) drops[x] = 1;
+    function draw() {
+        ctx.fillStyle = "rgba(0, 0, 0, 0.05)"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#0F0"; ctx.font = "15px arial";
+        drops.forEach((y, i) => {
+            ctx.fillText(letters[Math.floor(Math.random() * letters.length)], i * 16, y * 16);
+            if(y * 16 > canvas.height && Math.random() > 0.975) drops[i] = 0;
+            drops[i]++;
+        });
+    }
+    setInterval(draw, 33);
+</script>
+
 </body>
 </html>
